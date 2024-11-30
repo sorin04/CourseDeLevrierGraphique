@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -12,10 +13,14 @@ namespace CourseDeLevrierGraphique
         private Random random = new Random();
         private int[] distancesParcourues;
         private Thread[] threads;
+        private bool[] courseTerminee;
+        private int nombreLevrier;
+        private int placesFinies = 0;
 
         public CourseForm(int nombreLevrier)
         {
             InitializeComponent();
+            this.nombreLevrier = nombreLevrier;
             InitialiserCourse(nombreLevrier);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -24,11 +29,21 @@ namespace CourseDeLevrierGraphique
 
         private void InitialiserCourse(int nombreLevrier)
         {
-            this.Text = "Course de Levriers";
-            this.ClientSize = new Size(800, 400);
+            this.Text = "Course de Lévriers";
+            this.ClientSize = new Size(800, nombreLevrier * 60 + 50);
             levriers = new PictureBox[nombreLevrier];
             distancesParcourues = new int[nombreLevrier];
             threads = new Thread[nombreLevrier];
+            courseTerminee = new bool[nombreLevrier];
+
+            string[] imagePaths = new string[]
+            {
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier1.jpg",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier2.png",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier3.png",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier4.png",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier5.jpg"
+            };
 
             for (int i = 0; i < nombreLevrier; i++)
             {
@@ -36,8 +51,19 @@ namespace CourseDeLevrierGraphique
                 {
                     Size = new Size(50, 50),
                     Location = new Point(10, 50 + (i * 60)),
-                    BackColor = i % 2 == 0 ? Color.Red : Color.Blue,
+                    BackColor = Color.Transparent,
+                    SizeMode = PictureBoxSizeMode.StretchImage
                 };
+
+                try
+                {
+                    levriers[i].Image = Image.FromFile(imagePaths[i % imagePaths.Length]);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erreur lors du chargement de l'image : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
                 this.Controls.Add(levriers[i]);
             }
 
@@ -66,11 +92,38 @@ namespace CourseDeLevrierGraphique
                 Thread.Sleep(50);
             }
 
+            if (!courseTerminee[index])
+            {
+                courseTerminee[index] = true;
+                Interlocked.Increment(ref placesFinies);
+
+                if (placesFinies == nombreLevrier)
+                {
+                    AfficherClassement();
+                }
+            }
+        }
+
+        private void AfficherClassement()
+        {
+            var classement = distancesParcourues.Select((distance, index) => new { Levrier = index + 1, Distance = distance })
+                .OrderByDescending(l => l.Distance)
+                .ToList();
+
+            string resultat = "Classement final :\n";
+            int position = 1;
+
+            foreach (var item in classement)
+            {
+                resultat += $"Position {position}: Lévrier {item.Levrier}, Distance : {item.Distance} mètres\n";
+                position++;
+            }
+
             if (this.IsHandleCreated)
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show($"Le lévrier {index + 1} a terminé la course ! \nDistance parcourue: {distancesParcourues[index]} metre", "Fin de la course");
+                    MessageBox.Show(resultat, "Classement final", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }));
             }
         }
