@@ -9,19 +9,22 @@ namespace CourseDeLevrierGraphique
     public partial class CourseForm : Form
     {
         private PictureBox[] levriers;
-        private const int DistanceCourse = 800;
+        private const int DistanceCourse = 1000;
         private Random random = new Random();
         private int[] distancesParcourues;
         private Thread[] threads;
         private bool[] courseTerminee;
+        private Mutex mutex = new Mutex();
         private int nombreLevrier;
         private int placesFinies = 0;
+        
 
         public CourseForm(int nombreLevrier)
         {
             InitializeComponent();
             this.nombreLevrier = nombreLevrier;
             InitialiserCourse(nombreLevrier);
+
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -31,18 +34,20 @@ namespace CourseDeLevrierGraphique
         {
             this.Text = "Course de Lévriers";
             this.ClientSize = new Size(800, nombreLevrier * 60 + 50);
+
             levriers = new PictureBox[nombreLevrier];
             distancesParcourues = new int[nombreLevrier];
             threads = new Thread[nombreLevrier];
             courseTerminee = new bool[nombreLevrier];
+           
 
             string[] imagePaths = new string[]
             {
-                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier1.jpg",
-                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier2.png",
-                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier3.png",
-                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier4.png",
-                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier5.jpg"
+                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier1.jpg",
+                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier2.png",
+                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier3.png",
+                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier4.png",
+                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier5.jpg"
             };
 
             for (int i = 0; i < nombreLevrier; i++)
@@ -61,7 +66,8 @@ namespace CourseDeLevrierGraphique
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Erreur lors du chargement de l'image : {ex.Message}", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Erreur lors du chargement de l'image : {ex.Message}",
+                                    "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
 
                 this.Controls.Add(levriers[i]);
@@ -79,8 +85,22 @@ namespace CourseDeLevrierGraphique
         {
             while (distancesParcourues[index] < DistanceCourse)
             {
-                distancesParcourues[index] += random.Next(1, 10);
-
+                mutex.WaitOne();
+                try
+                {
+                    if (distancesParcourues[index] < 665)
+                    {
+                        distancesParcourues[index] += random.Next(1, 10);
+                    } else
+                    {
+                        break;
+                    }
+                    
+                }
+                finally
+                {
+                    mutex.ReleaseMutex();
+                }
                 if (this.IsHandleCreated)
                 {
                     this.Invoke(new Action(() =>
@@ -88,25 +108,38 @@ namespace CourseDeLevrierGraphique
                         levriers[index].Left = distancesParcourues[index];
                     }));
                 }
+               /* if (levriers[index].Left>=777 && levriers[index].Top == 12)
+                {
+                    AfficherClassement();
+                    break;
+                }*/
 
                 Thread.Sleep(50);
             }
-
-            if (!courseTerminee[index])
+            mutex.WaitOne();
+            try
             {
-                courseTerminee[index] = true;
-                Interlocked.Increment(ref placesFinies);
-
-                if (placesFinies == nombreLevrier)
+                if (!courseTerminee[index])
                 {
-                    AfficherClassement();
+                    courseTerminee[index] = true;
+                    placesFinies++;
+
+                    if (placesFinies == nombreLevrier)
+                    {
+                        AfficherClassement();
+                    }
                 }
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
             }
         }
 
         private void AfficherClassement()
         {
-            var classement = distancesParcourues.Select((distance, index) => new { Levrier = index + 1, Distance = distance })
+            var classement = distancesParcourues
+                .Select((distance, index) => new { Levrier = index + 1, Distance = distance })
                 .OrderByDescending(l => l.Distance)
                 .ToList();
 
@@ -115,7 +148,7 @@ namespace CourseDeLevrierGraphique
 
             foreach (var item in classement)
             {
-                resultat += $"Position {position}: Lévrier {item.Levrier}, Distance : {item.Distance} mètres\n";
+                resultat += $"Position {position}: Lévrier {item.Levrier}\n";
                 position++;
             }
 
@@ -126,6 +159,10 @@ namespace CourseDeLevrierGraphique
                     MessageBox.Show(resultat, "Classement final", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }));
             }
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
         }
     }
 }

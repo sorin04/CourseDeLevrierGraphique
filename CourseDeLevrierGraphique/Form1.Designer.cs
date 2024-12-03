@@ -36,28 +36,31 @@
             // label1nombre_a_saisir
             // 
             label1nombre_a_saisir.AutoSize = true;
-            label1nombre_a_saisir.Location = new Point(347, 96);
+            label1nombre_a_saisir.Location = new Point(243, 58);
+            label1nombre_a_saisir.Margin = new Padding(2, 0, 2, 0);
             label1nombre_a_saisir.Name = "label1nombre_a_saisir";
-            label1nombre_a_saisir.Size = new Size(0, 25);
+            label1nombre_a_saisir.Size = new Size(0, 15);
             label1nombre_a_saisir.TabIndex = 1;
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(177, 31);
+            label1.Location = new Point(125, 33);
+            label1.Margin = new Padding(2, 0, 2, 0);
             label1.Name = "label1";
-            label1.Size = new Size(221, 25);
+            label1.Size = new Size(146, 15);
             label1.TabIndex = 2;
             label1.Text = "Choisir Levrier entre 2 et 5:";
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
-            ClientSize = new Size(901, 580);
+            ClientSize = new Size(631, 348);
             Controls.Add(label1);
             Controls.Add(label1nombre_a_saisir);
+            Margin = new Padding(2);
             Name = "Form1";
             Text = "Form1";
             ResumeLayout(false);
