@@ -34,18 +34,19 @@
             // ligneArrivee
             // 
             ligneArrivee.BackColor = Color.Red;
-            ligneArrivee.Location = new Point(655, 2);
+            ligneArrivee.Location = new Point(1038, 3);
+            ligneArrivee.Margin = new Padding(4, 5, 4, 5);
             ligneArrivee.Name = "ligneArrivee";
-            ligneArrivee.Size = new Size(15, 508);
+            ligneArrivee.Size = new Size(21, 847);
             ligneArrivee.TabIndex = 0;
-            ligneArrivee.Paint += panel1_Paint;
             // 
             // CourseForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(854, 512);
+            ClientSize = new Size(1345, 853);
             Controls.Add(ligneArrivee);
+            Margin = new Padding(4, 5, 4, 5);
             Name = "CourseForm";
             Text = "CourseForm";
             ResumeLayout(false);

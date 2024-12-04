@@ -17,7 +17,11 @@ namespace CourseDeLevrierGraphique
         private Mutex mutex = new Mutex();
         private int nombreLevrier;
         private int placesFinies = 0;
-        
+
+        private ManualResetEvent depart;
+
+        private ManualResetEvent[] arriveesDrapeaux;
+        private int[] resultat;
 
         public CourseForm(int nombreLevrier)
         {
@@ -32,22 +36,22 @@ namespace CourseDeLevrierGraphique
 
         private void InitialiserCourse(int nombreLevrier)
         {
-            this.Text = "Course de Lévriers";
-            this.ClientSize = new Size(800, nombreLevrier * 60 + 50);
+            this.Text = "Course BTS CIEL";
+            this.ClientSize = new Size(1500, nombreLevrier * 60 + 50);
 
             levriers = new PictureBox[nombreLevrier];
             distancesParcourues = new int[nombreLevrier];
             threads = new Thread[nombreLevrier];
             courseTerminee = new bool[nombreLevrier];
-           
 
             string[] imagePaths = new string[]
             {
-                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier1.jpg",
-                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier2.png",
-                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier3.png",
-                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier4.png",
-                "C:\\Users\\spirgari\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier5.jpg"
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier1.jpg",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier2.png",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier3.png",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier4.png",
+                "C:\\Users\\sorin\\Source\\Repos\\CourseDeLevrierGraphique\\CourseDeLevrierGraphique\\ImagesLevrier\\levrier5.jpg",
+
             };
 
             for (int i = 0; i < nombreLevrier; i++)
@@ -72,30 +76,54 @@ namespace CourseDeLevrierGraphique
 
                 this.Controls.Add(levriers[i]);
             }
-
+            depart = new ManualResetEvent(false);
+            arriveesDrapeaux = new ManualResetEvent[nombreLevrier];
+            resultat = new int[nombreLevrier];
             for (int i = 0; i < nombreLevrier; i++)
             {
                 int index = i;
+                arriveesDrapeaux[i] = new ManualResetEvent(false);
                 threads[i] = new Thread(() => DeplacerLevrier(index));
                 threads[i].Start();
             }
+
+            Thread arrriveesCoureur = new Thread(this.gestionArrivee);
+            arrriveesCoureur.Start();
+
+
+            depart.Set();
+        }
+
+        private void gestionArrivee(object? obj)
+        {
+            for (int i = 0; i < nombreLevrier; i++)
+            {
+                int pos = WaitHandle.WaitAny(arriveesDrapeaux);
+                arriveesDrapeaux[pos].Reset();
+                resultat[i] = pos;
+            }
+            //
+            AfficherClassement();
+
         }
 
         private void DeplacerLevrier(int index)
         {
+            depart.WaitOne();
+
             while (distancesParcourues[index] < DistanceCourse)
             {
                 mutex.WaitOne();
                 try
                 {
-                    if (distancesParcourues[index] < 665)
+                    if (distancesParcourues[index] < 2500)
                     {
                         distancesParcourues[index] += random.Next(1, 10);
-                    } else
+                    }
+                    else
                     {
                         break;
                     }
-                    
                 }
                 finally
                 {
@@ -108,55 +136,32 @@ namespace CourseDeLevrierGraphique
                         levriers[index].Left = distancesParcourues[index];
                     }));
                 }
-               /* if (levriers[index].Left>=777 && levriers[index].Top == 12)
-                {
-                    AfficherClassement();
-                    break;
-                }*/
 
                 Thread.Sleep(50);
             }
-            mutex.WaitOne();
-            try
-            {
-                if (!courseTerminee[index])
-                {
-                    courseTerminee[index] = true;
-                    placesFinies++;
 
-                    if (placesFinies == nombreLevrier)
-                    {
-                        AfficherClassement();
-                    }
-                }
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
+            arriveesDrapeaux[index].Set();
+
+
+
+
         }
 
         private void AfficherClassement()
         {
-            var classement = distancesParcourues
-                .Select((distance, index) => new { Levrier = index + 1, Distance = distance })
-                .OrderByDescending(l => l.Distance)
-                .ToList();
 
-            string resultat = "Classement final :\n";
-            int position = 1;
+            string result = "Classement final :\n";
 
-            foreach (var item in classement)
+            for (int position = 0; position < resultat.Length; position++)
             {
-                resultat += $"Position {position}: Lévrier {item.Levrier}\n";
-                position++;
+                result += $"Position {position}: Coureur {resultat[position]}\n";
             }
 
             if (this.IsHandleCreated)
             {
                 this.Invoke(new Action(() =>
                 {
-                    MessageBox.Show(resultat, "Classement final", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(result, "Classement final", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }));
             }
         }
